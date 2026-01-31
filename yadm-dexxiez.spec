@@ -1,16 +1,22 @@
 %{!?_pkgdocdir: %global _pkgdocdir %{_docdir}/%{name}-%{version}}
-Name: yadm
-Summary: Yet Another Dotfiles Manager
+
+%if 0%{?copr_git_short}
+%global commit_short %{copr_git_short}
+%else
+%global commit_short %(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+%endif
+
+Name: yadm-dexxiez
+Summary: Yet Another Dotfiles Manager (dexxiez fork)
 Version: 3.5.0
-Group: Development/Tools
-Release: 1%{?dist}
+Release: 1.git%{commit_short}%{?dist}
 URL: https://yadm.io
 License: GPL-3.0-only
 Requires: bash
 Requires: git
+Conflicts: yadm
 
-Source: %{name}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-build
+Source0: %{name}-%{version}.tar.gz
 BuildArch: noarch
 
 %description
@@ -21,18 +27,16 @@ yadm supplies the ability to manage a subset of secure files, which are
 encrypted before they are included in the repository.
 
 %prep
-%setup -c
+%autosetup -n %{name}-%{version}
 
 %build
 
 %install
 
-# this is done to allow paths other than yadm-x.x.x (for example, when building
-# from branches instead of release tags)
-test -f yadm || cd *yadm-*
 
 %{__mkdir} -p %{buildroot}%{_bindir}
 %{__cp}  yadm %{buildroot}%{_bindir}
+sed -i 's/VERSION=REPLACEONBUILD/VERSION="%{version}-git%{commit_short}%{?dist}"/' %{buildroot}%{_bindir}/yadm
 
 %{__mkdir} -p  %{buildroot}%{_mandir}/man1
 %{__cp} yadm.1 %{buildroot}%{_mandir}/man1
@@ -40,7 +44,7 @@ test -f yadm || cd *yadm-*
 %{__mkdir} -p                        %{buildroot}%{_pkgdocdir}
 %{__cp} README.md                    %{buildroot}%{_pkgdocdir}/README
 %{__cp} CHANGES CONTRIBUTORS LICENSE %{buildroot}%{_pkgdocdir}
-%{__cp} -r completion contrib        %{buildroot}%{_pkgdocdir}
+%{__cp} -r contrib                   %{buildroot}%{_pkgdocdir}
 
 %files
 %attr(755,root,root) %{_bindir}/yadm

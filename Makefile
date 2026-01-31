@@ -72,6 +72,18 @@ usage:
 	@echo '  make install PREFIX=<prefix>'
 	@echo '    - Install yadm, manpage, etc. to <prefix>'
 	@echo
+	@echo 'RPM BUILDING'
+	@echo
+	@echo '  make rpm'
+	@echo '    - Build RPM locally using rpmbuild.'
+	@echo
+	@echo '  make rpm-mock [MOCK_CONFIG=<config>]'
+	@echo '    - Build RPM in a clean chroot using mock. Default config is'
+	@echo '      "fedora-$(shell rpm -E %fedora)-x86_64".'
+	@echo
+	@echo '  make rpm-srpm'
+	@echo '    - Build source RPM only.'
+	@echo
 	@echo 'UTILITIES'
 	@echo
 	@echo '  make sync-clock'
@@ -207,6 +219,33 @@ install:
 .PHONY: sync-clock
 sync-clock:
 	$(OCI) run --rm --privileged alpine hwclock -s
+
+# RPM Building
+MOCK_CONFIG ?= fedora-$(shell rpm -E %fedora)-x86_64
+RPM_SOURCEDIR = $(shell rpm -E %_sourcedir)
+RPM_SRPMDIR = $(shell rpm -E %_srcrpmdir)
+RPM_RPMDIR = $(shell rpm -E %_rpmdir)
+
+.PHONY: rpm-source
+rpm-source:
+	@mkdir -p $(RPM_SOURCEDIR)
+	git archive --prefix=yadm-dexxiez/ -o $(RPM_SOURCEDIR)/yadm-dexxiez.tar.gz HEAD
+	@echo "Source tarball created: $(RPM_SOURCEDIR)/yadm-dexxiez.tar.gz"
+
+.PHONY: rpm
+rpm: rpm-source
+	rpmbuild -bb yadm.spec
+	@echo "RPM built in $(RPM_RPMDIR)/noarch/"
+
+.PHONY: rpm-srpm
+rpm-srpm: rpm-source
+	rpmbuild -bs yadm.spec
+	@echo "SRPM built in $(RPM_SRPMDIR)/"
+
+.PHONY: rpm-mock
+rpm-mock: rpm-srpm
+	mock -r $(MOCK_CONFIG) --rebuild $(RPM_SRPMDIR)/yadm-dexxiez-*.src.rpm
+	@echo "Mock build complete. Check /var/lib/mock/$(MOCK_CONFIG)/result/"
 
 .PHONY: require-docker
 require-docker:
