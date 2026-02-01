@@ -51,8 +51,7 @@ GIT_PROGRAM="git"
 AWK_PROGRAM=("gawk" "awk")
 GIT_CRYPT_PROGRAM="git-crypt"
 TRANSCRYPT_PROGRAM="transcrypt"
-J2CLI_PROGRAM="j2"
-JINJANATOR_PROGRAM="jinjanator"
+JINJANATOR_PROGRAM="jinjanate"
 ENVTPL_PROGRAM="envtpl"
 ESH_PROGRAM="esh"
 LSB_RELEASE_PROGRAM="lsb_release"
@@ -312,8 +311,6 @@ function choose_template_processor() {
     awk_available && echo "default"
   elif [[ "$kind" = "esh" ]]; then
     esh_available && echo "esh"
-  elif [[ "$kind" = "j2cli" || "$kind" = "j2" ]] && j2cli_available; then
-    echo "j2cli"
   elif [[ "$kind" = "jinjanator" || "$kind" = "j2" ]] && jinjanator_available; then
     echo "jinjanator"
   elif [[ "$kind" = "envtpl" || "$kind" = "j2" ]] && envtpl_available; then
@@ -494,21 +491,6 @@ EOF
     -v source_dir="$(builtin_dirname "$input")" \
     "$awk_pgm" \
     "$input" "${local_classes[@]}"
-}
-
-function template_j2cli() {
-  local input="$1"
-
-  YADM_CLASS="$local_class" \
-    YADM_ARCH="$local_arch" \
-    YADM_OS="$local_system" \
-    YADM_HOSTNAME="$local_host" \
-    YADM_USER="$local_user" \
-    YADM_DISTRO="$local_distro" \
-    YADM_DISTRO_FAMILY="$local_distro_family" \
-    YADM_SOURCE="$input" \
-    YADM_CLASSES="$(join_string $'\n' "${local_classes[@]}")" \
-    "$J2CLI_PROGRAM" "$input"
 }
 
 function template_jinjanator() {
@@ -2259,10 +2241,6 @@ function bootstrap_available() {
 }
 function awk_available() {
   command -v "${AWK_PROGRAM[0]}" &>/dev/null && return
-  return 1
-}
-function j2cli_available() {
-  command -v "$J2CLI_PROGRAM" &>/dev/null && return
   return 1
 }
 function jinjanator_available() {

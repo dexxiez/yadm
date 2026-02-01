@@ -30,20 +30,20 @@ def test_kind_default(runner, yadm, awk, label):
     assert f"TEMPLATE:{expected}\n" in run.out
 
 
-@pytest.mark.parametrize("label", ["envtpl", "j2cli", "j2", "other"])
+@pytest.mark.parametrize("label", ["envtpl", "jinjanator", "other"])
 @pytest.mark.parametrize("envtpl", [True, False], ids=["envtpl", "no-envtpl"])
-@pytest.mark.parametrize("j2cli", [True, False], ids=["j2cli", "no-j2cli"])
-def test_kind_j2cli_envtpl(runner, yadm, envtpl, j2cli, label):
-    """Test kind: j2 (both j2cli & envtpl)
+@pytest.mark.parametrize("jinjanator", [True, False], ids=["jinjanator", "no-jinjanator"])
+def test_kind_jinjanator_envtpl(runner, yadm, envtpl, jinjanator, label):
+    """Test kind: jinjanator (both jinjanator & envtpl)
 
-    j2cli is preferred over envtpl if available.
+    jinjanator is preferred over envtpl if available.
     """
 
     envtpl_avail = "true" if envtpl else "false"
-    j2cli_avail = "true" if j2cli else "false"
+    jinjanator_avail = "true" if jinjanator else "false"
 
-    if label in ("j2cli", "j2") and j2cli:
-        expected = "j2cli"
+    if label in ("jinjanator", "j2") and jinjanator:
+        expected = "jinjanator"
     elif label in ("envtpl", "j2") and envtpl:
         expected = "envtpl"
     else:
@@ -52,7 +52,7 @@ def test_kind_j2cli_envtpl(runner, yadm, envtpl, j2cli, label):
     script = f"""
         YADM_TEST=1 source {yadm}
         function envtpl_available {{ {envtpl_avail}; }}
-        function j2cli_available {{ {j2cli_avail}; }}
+        function jinjanator_available {{ {jinjanator_avail}; }}
         template="$(choose_template_processor "{label}")"
         echo "TEMPLATE:$template"
     """
