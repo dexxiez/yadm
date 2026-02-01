@@ -1,17 +1,16 @@
 %{!?_pkgdocdir: %global _pkgdocdir %{_docdir}/%{name}-%{version}}
 
-%global commit_short %(git rev-parse --short HEAD 2>/dev/null || echo unknown)
-
 Name: yadm-dexxiez
 Summary: Yet Another Dotfiles Manager (dexxiez fork)
 Version: 3.5.0
-Release: 1.git%{commit_short}%{?dist}
+Release: 1.git%{shortcommit}%{?dist}
 URL: https://yadm.io
 License: GPL-3.0-only
 Requires: bash
 Requires: git
 Conflicts: yadm
 
+Source0: %{name}-%{version}.tar.gz
 BuildArch: noarch
 
 %description
@@ -22,14 +21,14 @@ yadm supplies the ability to manage a subset of secure files, which are
 encrypted before they are included in the repository.
 
 %prep
-# Nothing to extract - building directly from git checkout
+%autosetup -c
 
 %build
 
 %install
 %{__mkdir} -p %{buildroot}%{_bindir}
 %{__cp}  yadm %{buildroot}%{_bindir}
-sed -i 's/VERSION=REPLACEONBUILD/VERSION="%{version}-git%{commit_short}%{?dist}"/' %{buildroot}%{_bindir}/yadm
+sed -i 's/VERSION=REPLACEONBUILD/VERSION="%{version}-git%{shortcommit}%{?dist}"/' %{buildroot}%{_bindir}/yadm
 
 %{__mkdir} -p  %{buildroot}%{_mandir}/man1
 %{__cp} yadm.1 %{buildroot}%{_mandir}/man1
