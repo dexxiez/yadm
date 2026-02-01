@@ -1,8 +1,6 @@
 %{!?_pkgdocdir: %global _pkgdocdir %{_docdir}/%{name}-%{version}}
 
-# rpkg macros for git-based builds
-{{{ git_dir_vcs_tag }}}
-%global commit_short {{{ git_short_commit }}}
+%global commit_short %(git rev-parse --short HEAD 2>/dev/null || echo unknown)
 
 Name: yadm-dexxiez
 Summary: Yet Another Dotfiles Manager (dexxiez fork)
@@ -14,8 +12,6 @@ Requires: bash
 Requires: git
 Conflicts: yadm
 
-# rpkg macro to create tarball from git
-Source0: {{{ git_dir_pack }}}
 BuildArch: noarch
 
 %description
@@ -26,14 +22,11 @@ yadm supplies the ability to manage a subset of secure files, which are
 encrypted before they are included in the repository.
 
 %prep
-# rpkg macro to extract the git-generated tarball
-{{{ git_dir_setup_macro }}}
+# Nothing to extract - building directly from git checkout
 
 %build
 
 %install
-
-
 %{__mkdir} -p %{buildroot}%{_bindir}
 %{__cp}  yadm %{buildroot}%{_bindir}
 sed -i 's/VERSION=REPLACEONBUILD/VERSION="%{version}-git%{commit_short}%{?dist}"/' %{buildroot}%{_bindir}/yadm
