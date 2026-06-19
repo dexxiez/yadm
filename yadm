@@ -505,7 +505,7 @@ function template_jinjanator() {
     YADM_DISTRO_FAMILY="$local_distro_family" \
     YADM_SOURCE="$input" \
     YADM_CLASSES="$(join_string $'\n' "${local_classes[@]}")" \
-    "$JINJANATOR_PROGRAM" "$input"
+    "$JINJANATOR_PROGRAM" --quiet "$input"
 }
 
 function template_envtpl() {
