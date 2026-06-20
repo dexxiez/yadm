@@ -2,7 +2,7 @@
 
 Name: yadm-dexxiez
 Summary: Yet Another Dotfiles Manager (dexxiez fork)
-Version: 3.5.0
+Version: 3.5.1
 Release: 1.git{{{ git rev-parse --short HEAD }}}%{?dist}
 URL: https://yadm.io
 License: GPL-3.0-only
