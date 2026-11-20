@@ -1,4 +1,4 @@
-"""Unit tests: template_j2cli & template_envtpl"""
+"""Unit tests: template_jinjanator, template_jinja2 & template_envtpl"""
 
 import os
 
@@ -120,9 +120,9 @@ end of template
 """
 
 
-@pytest.mark.parametrize("processor", ("j2cli", "envtpl"))
+@pytest.mark.parametrize("processor", ("jinjanator", "jinja2", "envtpl"))
 def test_template_j2(runner, yadm, tmpdir, processor):
-    """Test processing by j2cli & envtpl"""
+    """Test processing by jinjanator, jinja2 & envtpl"""
     # pylint: disable=duplicate-code
 
     input_file = tmpdir.join("input")
@@ -155,7 +155,7 @@ def test_template_j2(runner, yadm, tmpdir, processor):
     assert os.stat(output_file).st_mode == os.stat(input_file).st_mode
 
 
-@pytest.mark.parametrize("processor", ("j2cli", "envtpl"))
+@pytest.mark.parametrize("processor", ("jinjanator", "jinja2", "envtpl"))
 def test_source(runner, yadm, tmpdir, processor):
     """Test YADM_SOURCE"""
 
@@ -173,3 +173,39 @@ def test_source(runner, yadm, tmpdir, processor):
     assert run.err == ""
     assert output_file.read().strip() == str(input_file)
     assert os.stat(output_file).st_mode == os.stat(input_file).st_mode
+
+
+def test_jinja2_include_and_env(runner, yadm, tmpdir):
+    """Built-in jinja2: includes resolve next to the template, env() works"""
+
+    tmpdir.join("part").write("included {{ YADM_USER }}\n", ensure=True)
+    input_file = tmpdir.join("input")
+    input_file.write('{% include "part" %}home={{ env("TEST_VAR") }}|{{ "TEST_VAR" | env }}\n')
+    output_file = tmpdir.join("output")
+
+    script = f"""
+        YADM_TEST=1 source {yadm}
+        local_user="someone"
+        TEST_VAR=value template jinja2 "{input_file}" "{output_file}"
+    """
+    run = runner(command=["bash"], inp=script)
+    assert run.success
+    assert run.err == ""
+    assert output_file.read() == "included someone\nhome=value|value\n"
+
+
+def test_jinja2_undefined_is_error(runner, yadm, tmpdir):
+    """Built-in jinja2: undefined variables fail instead of rendering blank"""
+
+    input_file = tmpdir.join("input")
+    input_file.write("{{ NOT_A_REAL_VARIABLE }}", ensure=True)
+    output_file = tmpdir.join("output")
+
+    script = f"""
+        YADM_TEST=1 source {yadm}
+        template jinja2 "{input_file}" "{output_file}"
+    """
+    run = runner(command=["bash"], inp=script)
+    assert "NOT_A_REAL_VARIABLE" in run.err
+    assert "failed to process template" in run.err
+    assert not output_file.exists()

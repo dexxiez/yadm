@@ -52,6 +52,7 @@ AWK_PROGRAM=("gawk" "awk")
 GIT_CRYPT_PROGRAM="git-crypt"
 TRANSCRYPT_PROGRAM="transcrypt"
 JINJANATOR_PROGRAM="jinjanate"
+PYTHON_PROGRAM="python3"
 ENVTPL_PROGRAM="envtpl"
 ESH_PROGRAM="esh"
 LSB_RELEASE_PROGRAM="lsb_release"
@@ -313,6 +314,10 @@ function choose_template_processor() {
     esh_available && echo "esh"
   elif [[ "$kind" = "jinjanator" || "$kind" = "j2" ]] && jinjanator_available; then
     echo "jinjanator"
+  elif [[ "$kind" = "jinja2" || "$kind" = "jinjanator" || "$kind" = "j2" ]] && jinja2_available; then
+    # built-in renderer: only needs the python3 jinja2 module (e.g. the
+    # distro's python3-jinja2 package), so it survives python upgrades
+    echo "jinja2"
   elif [[ "$kind" = "envtpl" || "$kind" = "j2" ]] && envtpl_available; then
     echo "envtpl"
   fi
@@ -506,6 +511,63 @@ function template_jinjanator() {
     YADM_SOURCE="$input" \
     YADM_CLASSES="$(join_string $'\n' "${local_classes[@]}")" \
     "$JINJANATOR_PROGRAM" --quiet "$input"
+}
+
+function template_jinja2() {
+  local input="$1"
+
+  # Minimal jinjanator/j2cli-compatible renderer. Environment variables are the
+  # template context, undefined variables are errors, and {% include %} paths
+  # are resolved relative to the template's directory.
+  local py_pgm
+  read -r -d '' py_pgm <<"EOF"
+import os
+import sys
+
+# never import modules from the current directory (e.g. a stray jinja2.py)
+sys.path = [p for p in sys.path if p not in ("", ".")]
+
+import jinja2
+
+source = sys.argv[1]
+
+
+def env_lookup(name, default=None):
+    value = os.environ.get(name, default)
+    if value is None:
+        raise jinja2.UndefinedError(f"environment variable '{name}' is not set")
+    return value
+
+
+environment = jinja2.Environment(
+    loader=jinja2.FileSystemLoader([os.path.dirname(os.path.abspath(source)), os.getcwd()]),
+    keep_trailing_newline=True,
+    undefined=jinja2.StrictUndefined,
+    extensions=["jinja2.ext.do", "jinja2.ext.loopcontrols"],
+)
+environment.filters["env"] = env_lookup
+environment.globals["env"] = env_lookup
+
+try:
+    with open(source, encoding="utf-8") as handle:
+        template = environment.from_string(handle.read())
+    sys.stdout.write(template.render(os.environ))
+except jinja2.TemplateSyntaxError as err:
+    sys.exit(f"{source}:{err.lineno}: {err.message}")
+except (jinja2.TemplateError, OSError) as err:
+    sys.exit(f"{source}: {err}")
+EOF
+
+  YADM_CLASS="$local_class" \
+    YADM_ARCH="$local_arch" \
+    YADM_OS="$local_system" \
+    YADM_HOSTNAME="$local_host" \
+    YADM_USER="$local_user" \
+    YADM_DISTRO="$local_distro" \
+    YADM_DISTRO_FAMILY="$local_distro_family" \
+    YADM_SOURCE="$input" \
+    YADM_CLASSES="$(join_string $'\n' "${local_classes[@]}")" \
+    "$PYTHON_PROGRAM" -c "$py_pgm" "$input"
 }
 
 function template_envtpl() {
@@ -2244,11 +2306,23 @@ function awk_available() {
   return 1
 }
 function jinjanator_available() {
-  command -v "$JINJANATOR_PROGRAM" &>/dev/null && return
+  # Don't just check the command exists: after a python upgrade the script can
+  # still be on PATH while its module is gone, so make sure it actually runs.
+  command -v "$JINJANATOR_PROGRAM" &>/dev/null || return 1
+  "$JINJANATOR_PROGRAM" --version &>/dev/null && return
+  debug "'$JINJANATOR_PROGRAM' is installed but broken; skipping it" >&2
+  return 1
+}
+function jinja2_available() {
+  command -v "$PYTHON_PROGRAM" &>/dev/null || return 1
+  "$PYTHON_PROGRAM" -c 'import jinja2' &>/dev/null && return
   return 1
 }
 function envtpl_available() {
-  command -v "$ENVTPL_PROGRAM" &>/dev/null && return
+  # same python-upgrade breakage as jinjanator, so check it actually runs
+  command -v "$ENVTPL_PROGRAM" &>/dev/null || return 1
+  "$ENVTPL_PROGRAM" --help &>/dev/null && return
+  debug "'$ENVTPL_PROGRAM' is installed but broken; skipping it" >&2
   return 1
 }
 function esh_available() {

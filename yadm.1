@@ -692,9 +692,17 @@ own configurations within templates, for example:
 
 To use the ESH template processor, specify the value of "esh"
 .TP
-.B j2cli
-To use the j2cli Jinja template processor, specify the value of "j2"  or
-"j2cli".
+.B jinjanator
+To use the jinjanator Jinja template processor, specify the value of "j2" or
+"jinjanator".
+.TP
+.B jinja2
+yadm's built-in Jinja renderer. It only requires
+.B python3
+with the
+.B jinja2
+module (e.g. the python3-jinja2 package), so it keeps working when pip-installed
+tools break after a Python upgrade. To use it, specify the value of "jinja2".
 .TP
 .B envtpl
 To use the envtpl Jinja template processor, specify the value of "j2" or
@@ -702,8 +710,9 @@ To use the envtpl Jinja template processor, specify the value of "j2" or
 
 .LP
 .BR NOTE :
-Specifying "j2" as the processor will attempt to use j2cli or envtpl, whichever
-is available.
+Specifying "j2" will use the first working processor out of jinjanator, the
+built-in jinja2 renderer, or envtpl. Specifying "jinjanator" will fall back to
+the built-in jinja2 renderer if jinjanator is missing or broken.
 
 If the template processor specified is available, templates will be processed
 to create or overwrite files.

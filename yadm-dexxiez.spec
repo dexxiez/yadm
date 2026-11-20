@@ -8,6 +8,8 @@ URL: https://yadm.io
 License: GPL-3.0-only
 Requires: bash
 Requires: git
+# lets the built-in Jinja renderer work without pip-installed tools
+Requires: python3-jinja2
 Provides: yadm
 Conflicts: yadm
 

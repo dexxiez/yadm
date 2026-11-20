@@ -145,7 +145,7 @@ def test_alt_conditions(runner, paths, tst_arch, tst_sys, tst_distro, tst_distro
 
 
 @pytest.mark.usefixtures("ds1_copy")
-@pytest.mark.parametrize("kind", ["default", "", None, "envtpl", "j2cli", "j2", "esh"])
+@pytest.mark.parametrize("kind", ["default", "", None, "envtpl", "jinjanator", "jinja2", "j2", "esh"])
 @pytest.mark.parametrize(
     "label",
     [
